@@ -30,6 +30,7 @@
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Menu, Button } from 'ant-design-vue'
+import type { MenuInfo } from 'ant-design-vue/es/menu/src/interface'
 
 const AMenu = Menu
 const AButton = Button
@@ -68,8 +69,8 @@ router.afterEach(() => {
 updateSelectedKeys()
 
 // 菜单点击处理
-const handleMenuClick = ({ key }: { key: string }) => {
-  router.push(key)
+const handleMenuClick = (info: MenuInfo) => {
+  router.push(info.key as string)
 }
 
 // 登录按钮处理
