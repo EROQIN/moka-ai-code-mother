@@ -1,7 +1,7 @@
 package com.erokin.mokaaicodemother.mapper;
 
 import com.mybatisflex.core.BaseMapper;
-import com.erokin.mokaaicodemother.entity.User;
+import com.erokin.mokaaicodemother.model.entity.User;
 
 /**
  * 用户 映射层。
