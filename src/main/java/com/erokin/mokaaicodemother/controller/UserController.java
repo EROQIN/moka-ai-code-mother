@@ -9,7 +9,7 @@ import com.erokin.mokaaicodemother.constant.UserConstant;
 import com.erokin.mokaaicodemother.exception.BusinessException;
 import com.erokin.mokaaicodemother.exception.ErrorCode;
 import com.erokin.mokaaicodemother.exception.ThrowUtils;
-import com.erokin.mokaaicodemother.model.dto.*;
+import com.erokin.mokaaicodemother.model.dto.user.*;
 import com.erokin.mokaaicodemother.model.vo.LoginUserVO;
 import com.erokin.mokaaicodemother.model.vo.UserVO;
 import com.mybatisflex.core.paginate.Page;
@@ -163,7 +163,7 @@ public class UserController {
      * @param request          请求
      * @return 登录结果
      */
-    @PostMapping("/login")
+    @PostMapping("login")
     public BaseResponse<LoginUserVO> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
         ThrowUtils.throwIf(userLoginRequest == null, ErrorCode.PARAMS_ERROR);
         String userAccount = userLoginRequest.getUserAccount();

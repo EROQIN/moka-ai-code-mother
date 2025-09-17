@@ -7,25 +7,24 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Getter
-public enum UserRoleEnum {
+public enum CodeGenTypeEnum {
 
-
-    USER("用户", "user"),
-    ADMIN("管理员", "admin");
+    HTML("原生 HTML 模式", "html"),
+    MULTI_FILE("原生多文件模式", "multi_file");
 
     private final String description;
 
     private final String value;
 
-    private static final Map<String,UserRoleEnum> VALUE_MAP = new HashMap<>();
+    private static final Map<String, CodeGenTypeEnum> VALUE_MAP = new HashMap<>();
 
     static {
-        for (UserRoleEnum anEnum : UserRoleEnum.values()) {
+        for (CodeGenTypeEnum anEnum : CodeGenTypeEnum.values()) {
             VALUE_MAP.put(anEnum.value, anEnum);
         }
     }
 
-    UserRoleEnum(String description, String value) {
+    CodeGenTypeEnum(String description, String value) {
         this.description = description;
         this.value = value;
     }
@@ -37,7 +36,7 @@ public enum UserRoleEnum {
      * @param value 枚举值的value
      * @return 枚举值
      */
-    public static UserRoleEnum getEnumByValue(String value) {
+    public static CodeGenTypeEnum getEnumByValue(String value) {
         if (ObjUtil.isEmpty(value)) {
             return null;
         }

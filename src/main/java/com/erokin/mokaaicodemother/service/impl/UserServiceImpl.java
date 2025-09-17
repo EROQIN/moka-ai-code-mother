@@ -1,4 +1,5 @@
 package com.erokin.mokaaicodemother.service.impl;
+import java.time.LocalDateTime;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
@@ -6,7 +7,7 @@ import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import com.erokin.mokaaicodemother.exception.BusinessException;
 import com.erokin.mokaaicodemother.exception.ErrorCode;
-import com.erokin.mokaaicodemother.model.dto.UserQueryRequest;
+import com.erokin.mokaaicodemother.model.dto.user.UserQueryRequest;
 import com.erokin.mokaaicodemother.model.enums.UserRoleEnum;
 import com.erokin.mokaaicodemother.model.vo.LoginUserVO;
 import com.erokin.mokaaicodemother.model.vo.UserVO;
@@ -197,6 +198,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>  implements U
      */
     private static void validateLoginParameters(String userAccount, String userPassword) {
         //1.传递参数不能为空
+        if (StrUtil.hasBlank(userAccount, userPassword)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+        }
 
         //2.账号长度不得小于4
         if (userAccount.length() < 4) {

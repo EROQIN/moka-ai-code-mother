@@ -1,6 +1,6 @@
 package com.erokin.mokaaicodemother.service;
 
-import com.erokin.mokaaicodemother.model.dto.UserQueryRequest;
+import com.erokin.mokaaicodemother.model.dto.user.UserQueryRequest;
 import com.erokin.mokaaicodemother.model.vo.LoginUserVO;
 import com.erokin.mokaaicodemother.model.vo.UserVO;
 import com.mybatisflex.core.query.QueryWrapper;
