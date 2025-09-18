@@ -16,12 +16,9 @@ public class AiCodeGeneratorServiceFactory {
     @Resource
     private StreamingChatModel streamingChatModel;
 
-    @Resource
-    private AiCodeGeneratorService aiCodeGeneratorService;
-
     @Bean
     public AiCodeGeneratorService aiCodeGeneratorService() {
-        return AiServices.builder(aiCodeGeneratorService.getClass())
+        return AiServices.builder(AiCodeGeneratorService.class)
                 .chatModel(chatModel)
                 .streamingChatModel(streamingChatModel)
                 .build();
