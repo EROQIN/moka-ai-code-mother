@@ -40,7 +40,7 @@ class AiCodeGeneratorFacadeTest {
 
     @Test
     void generateAndSaveHtmlCodeStream() {
-        Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream("生成一个HTML界面，介绍你自己。", CodeGenTypeEnum.HTML);
+        Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream("生成一个HTML界面，作为导航站网址记录小工具。", CodeGenTypeEnum.HTML);
         // 阻塞等待所有数据收集完成
         List<String> result = codeStream.collectList().block();
         // 验证结果
