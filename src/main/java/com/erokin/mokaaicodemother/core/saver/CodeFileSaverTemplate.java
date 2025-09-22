@@ -14,15 +14,16 @@ public abstract class CodeFileSaverTemplate<T> {
     private static final String FILE_SAVE_ROOT_DIR = System.getProperty("user.dir") + "/tmp/code_output";
 
     /**
-     * 模板方法
-     * @param result 要保存的结果对象(enums)
-     * @return 保存后的目录对象
+     * 保存代码文件
+     * @param result 代码结果对象
+     * @param AppId
+     * @return
      */
-    public final File saveCode(T result){
+    public final File saveCode(T result,Long AppId){
         //1.验证参数
         validateInput(result);
         //2.构建唯一目录
-        String baseDirPath = buildUniqueDir(result.getClass().getSimpleName());
+        String baseDirPath = buildUniqueDir(AppId);
         //3.保存文件(具体交给子类实现)
         saveFiles(result, baseDirPath);
         //4.返回保存后的目录对象
@@ -46,8 +47,12 @@ public abstract class CodeFileSaverTemplate<T> {
      * 构建唯一目录路径：tmp/code_output/bizType_雪花ID
      * 不由子类实现
      */
-     protected final String buildUniqueDir(String bizType) {
-        String uniqueDirName = StrUtil.format("{}_{}", bizType, IdUtil.getSnowflakeNextIdStr());
+     protected final String buildUniqueDir(Long appId) {
+         if (appId == null) {
+             throw new BusinessException(ErrorCode.SYSTEM_ERROR,"appId不能为空");
+         }
+         String codeType = getCodeType().getValue();
+         String uniqueDirName = StrUtil.format("{}_{}", codeType, appId);
         String dirPath = FILE_SAVE_ROOT_DIR + File.separator + uniqueDirName;
         FileUtil.mkdir(dirPath);
         return dirPath;

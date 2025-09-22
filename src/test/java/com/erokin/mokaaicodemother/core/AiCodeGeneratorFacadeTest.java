@@ -18,18 +18,18 @@ class AiCodeGeneratorFacadeTest {
     private AiCodeGeneratorFacade aiCodeGeneratorFacade;
     @Test
     void generateAndSaveHtmlCode() {
-        File file = aiCodeGeneratorFacade.generateAndSaveCode("生成一个HTML界面，介绍你自己。", CodeGenTypeEnum.HTML);
+        File file = aiCodeGeneratorFacade.generateAndSaveCode("生成一个HTML界面，介绍你自己。", CodeGenTypeEnum.HTML,100L);
         assertNotNull(file);
     }
     @Test
     void generateAndSaveMultiFileCode() {
-        File file = aiCodeGeneratorFacade.generateAndSaveCode("生成制作一个日历小工具", CodeGenTypeEnum.MULTI_FILE);
+        File file = aiCodeGeneratorFacade.generateAndSaveCode("生成制作一个日历小工具", CodeGenTypeEnum.MULTI_FILE,10L);
         assertNotNull(file);
     }
 
     @Test
     void generateAndSaveCodeStream() {
-        Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream("任务记录网站", CodeGenTypeEnum.MULTI_FILE);
+        Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream("任务记录网站", CodeGenTypeEnum.MULTI_FILE,1233L);
         // 阻塞等待所有数据收集完成
         List<String> result = codeStream.collectList().block();
         // 验证结果
@@ -40,7 +40,7 @@ class AiCodeGeneratorFacadeTest {
 
     @Test
     void generateAndSaveHtmlCodeStream() {
-        Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream("生成一个HTML界面，作为导航站网址记录小工具。", CodeGenTypeEnum.HTML);
+        Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream("生成一个HTML界面，作为导航站网址记录小工具。", CodeGenTypeEnum.HTML,111230L);
         // 阻塞等待所有数据收集完成
         List<String> result = codeStream.collectList().block();
         // 验证结果

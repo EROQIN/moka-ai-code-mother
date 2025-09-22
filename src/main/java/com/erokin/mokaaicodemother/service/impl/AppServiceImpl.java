@@ -3,17 +3,22 @@ package com.erokin.mokaaicodemother.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
+import com.erokin.mokaaicodemother.core.AiCodeGeneratorFacade;
 import com.erokin.mokaaicodemother.exception.BusinessException;
 import com.erokin.mokaaicodemother.exception.ErrorCode;
 import com.erokin.mokaaicodemother.exception.ThrowUtils;
 import com.erokin.mokaaicodemother.model.dto.app.AppQueryRequest;
+import com.erokin.mokaaicodemother.model.entity.User;
+import com.erokin.mokaaicodemother.model.enums.CodeGenTypeEnum;
 import com.erokin.mokaaicodemother.model.vo.AppVO;
 import com.erokin.mokaaicodemother.service.AppService;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.erokin.mokaaicodemother.model.entity.App;
 import com.erokin.mokaaicodemother.mapper.AppMapper;
+import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,11 +32,12 @@ import java.util.stream.Collectors;
 @Service
 public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppService {
 
+    @Resource
+    private AiCodeGeneratorFacade aiCodeGeneratorFacade;
+
     @Override
     public void validApp(App app, boolean add) {
-        if (app == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
-        }
+        ThrowUtils.throwIf(app == null, ErrorCode.PARAMS_ERROR,"app对象不能为空");
         String appName = app.getAppName();
         String initPrompt = app.getInitPrompt();
 
@@ -112,5 +118,27 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
                 .orderBy(StrUtil.isNotBlank(sortField) ? sortField : "priority", "ascend".equals(sortOrder));
 
         return queryWrapper;
+    }
+
+    @Override
+    public Flux<String> chatToGenCode(Long appId, String message, User loginUser) {
+        // 1.参数校验
+        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用 ID 不能为空");
+        // message不能为空
+        ThrowUtils.throwIf(StrUtil.isBlank(message), ErrorCode.PARAMS_ERROR, "message不能为空");
+
+        // 2.查询应用Id
+        App app = this.getById(appId);
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
+        // 3.检验用户是否具有权限
+        ThrowUtils.throwIf(!app.getUserId().equals(loginUser.getId()), ErrorCode.PARAMS_ERROR, "应用 ID 不能为空");
+        // 4.获取应用生成类型
+        String codeGenType = app.getCodeGenType();
+        ThrowUtils.throwIf(StrUtil.isBlank(codeGenType), ErrorCode.PARAMS_ERROR, "应用生成类型不能为空");
+        // 5.调用生成代码接口
+        return aiCodeGeneratorFacade.generateAndSaveCodeStream(message, CodeGenTypeEnum.valueOf(codeGenType), appId);
+
+
+
     }
 }

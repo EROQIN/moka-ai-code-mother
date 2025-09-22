@@ -1,10 +1,12 @@
 package com.erokin.mokaaicodemother.service;
 
 import com.erokin.mokaaicodemother.model.dto.app.AppQueryRequest;
+import com.erokin.mokaaicodemother.model.entity.User;
 import com.erokin.mokaaicodemother.model.vo.AppVO;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
 import com.erokin.mokaaicodemother.model.entity.App;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 
@@ -54,4 +56,6 @@ public interface AppService extends IService<App> {
      * @return
      */
     QueryWrapper getFeaturedAppQueryWrapper(AppQueryRequest appQueryRequest);
+
+    Flux<String> chatToGenCode(Long appId, String message, User loginUser);
 }
