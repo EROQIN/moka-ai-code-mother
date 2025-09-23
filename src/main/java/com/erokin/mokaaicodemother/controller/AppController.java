@@ -11,10 +11,7 @@ import com.erokin.mokaaicodemother.constant.UserConstant;
 import com.erokin.mokaaicodemother.exception.BusinessException;
 import com.erokin.mokaaicodemother.exception.ErrorCode;
 import com.erokin.mokaaicodemother.exception.ThrowUtils;
-import com.erokin.mokaaicodemother.model.dto.app.AppAddRequest;
-import com.erokin.mokaaicodemother.model.dto.app.AppQueryRequest;
-import com.erokin.mokaaicodemother.model.dto.app.AppUpdateByAdminRequest;
-import com.erokin.mokaaicodemother.model.dto.app.AppUpdateRequest;
+import com.erokin.mokaaicodemother.model.dto.app.*;
 import com.erokin.mokaaicodemother.model.entity.User;
 import com.erokin.mokaaicodemother.model.vo.AppVO;
 import com.erokin.mokaaicodemother.service.UserService;
@@ -246,6 +243,22 @@ public class AppController {
                         .data("")
                         .build()
         ));
+    }
+
+    /**
+     * 应用部署
+     * @param appDeployRequest 应用部署请求
+     * @return 部署网址
+     */
+    @PostMapping("/deploy")
+    public BaseResponse<String> deployApp(@RequestBody AppDeployRequest appDeployRequest, HttpServletRequest request) {
+        ThrowUtils.throwIf(appDeployRequest == null || appDeployRequest.getAppId() <= 0, ErrorCode.PARAMS_ERROR, "应用 ID 不能为空");
+        User loginUser = userService.getLoginUser(request);
+        ThrowUtils.throwIf(loginUser == null, ErrorCode.NOT_LOGIN_ERROR,"未登录");
+        Long appId = appDeployRequest.getAppId();
+        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用不存在");
+        String deployUrl = appService.deployApp(appId, loginUser);
+        return ResultUtils.success(deployUrl);
     }
 
     // endregion

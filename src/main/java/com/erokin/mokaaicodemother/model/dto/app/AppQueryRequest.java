@@ -4,6 +4,7 @@ import com.erokin.mokaaicodemother.common.PageRequest;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+import java.io.Serial;
 import java.io.Serializable;
 
 /**
@@ -50,5 +51,6 @@ public class AppQueryRequest extends PageRequest implements Serializable {
      */
     private Long userId;
 
+    @Serial
     private static final long serialVersionUID = 1L;
 }

@@ -3,6 +3,7 @@ package com.erokin.mokaaicodemother.core.saver;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
+import com.erokin.mokaaicodemother.constant.AppConstant;
 import com.erokin.mokaaicodemother.exception.BusinessException;
 import com.erokin.mokaaicodemother.exception.ErrorCode;
 import com.erokin.mokaaicodemother.model.enums.CodeGenTypeEnum;
@@ -11,7 +12,7 @@ import java.io.File;
 
 public abstract class CodeFileSaverTemplate<T> {
     // 文件存储路径
-    private static final String FILE_SAVE_ROOT_DIR = System.getProperty("user.dir") + "/tmp/code_output";
+    private static final String FILE_SAVE_ROOT_DIR = AppConstant.CODE_OUTPUT_ROOT_DIR;
 
     /**
      * 保存代码文件
