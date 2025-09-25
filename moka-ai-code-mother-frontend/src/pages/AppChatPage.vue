@@ -1,9 +1,16 @@
 <script setup lang="ts">
-import { ref, onMounted, nextTick, computed } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { getAppVoById, deployApp } from '@/api/appController'
 import { marked } from 'marked'
+import {
+  UserOutlined,
+  RobotOutlined,
+  PaperClipOutlined,
+  AudioOutlined,
+  GlobalOutlined,
+} from '@ant-design/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -210,7 +217,7 @@ onMounted(() => {
 
       <!-- 主要内容区域 -->
       <div class="main-content">
-        <!-- 左侧对话区域 -->
+        <!-- 对话区域 -->
         <div class="chat-section">
           <!-- 消息区域 -->
           <div ref="chatContainer" class="messages-container">
@@ -220,8 +227,8 @@ onMounted(() => {
               :class="['message', message.role]"
             >
               <div class="message-avatar">
-                <span v-if="message.role === 'user'">👤</span>
-                <span v-else>🤖</span>
+                <UserOutlined v-if="message.role === 'user'" />
+                <RobotOutlined v-else />
               </div>
               <div class="message-content">
                 <div
@@ -239,7 +246,7 @@ onMounted(() => {
             <!-- 加载指示器 -->
             <div v-if="chatLoading" class="message assistant">
               <div class="message-avatar">
-                <span>🤖</span>
+                <RobotOutlined />
               </div>
               <div class="message-content">
                 <div class="typing-indicator">
@@ -265,8 +272,18 @@ onMounted(() => {
               />
               <div class="input-actions">
                 <div class="input-tools">
-                  <a-button type="text" size="small"> 📎 上传 </a-button>
-                  <a-button type="text" size="small"> 🎤 语音 </a-button>
+                  <a-button type="text" size="small">
+                    <template #icon>
+                      <PaperClipOutlined />
+                    </template>
+                    上传
+                  </a-button>
+                  <a-button type="text" size="small">
+                    <template #icon>
+                      <AudioOutlined />
+                    </template>
+                    语音
+                  </a-button>
                 </div>
                 <a-button
                   type="primary"
@@ -282,7 +299,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- 右侧网页展示区域 -->
+        <!-- 网页预览区域 -->
         <div class="preview-section">
           <div class="preview-header">
             <h3>生成后的网页展示</h3>
@@ -295,7 +312,9 @@ onMounted(() => {
 
           <div class="preview-content">
             <div v-if="!showWebsite" class="preview-placeholder">
-              <div class="placeholder-icon">🌐</div>
+              <div class="placeholder-icon">
+                <GlobalOutlined />
+              </div>
               <p>网站生成完成后将在此处展示</p>
             </div>
             <iframe v-else :src="websiteUrl" class="preview-iframe" frameborder="0"></iframe>
@@ -308,7 +327,7 @@ onMounted(() => {
 
 <style scoped>
 .app-chat-page {
-  height: calc(100vh - 64px);
+  min-height: calc(100vh - 64px);
   display: flex;
   flex-direction: column;
   background: #f5f5f5;
@@ -350,18 +369,19 @@ onMounted(() => {
 .main-content {
   flex: 1;
   display: flex;
+  flex-direction: column;
   gap: 1px;
   background: #e8e8e8;
-  overflow: hidden;
 }
 
-/* 左侧对话区域 */
+/* 对话区域 */
 .chat-section {
-  flex: 1;
+  height: 75vh;
   display: flex;
   flex-direction: column;
   background: white;
-  min-width: 400px;
+  min-height: 500px;
+  max-height: 85vh;
 }
 
 .messages-container {
@@ -510,7 +530,7 @@ onMounted(() => {
 
 /* 输入区域 */
 .input-section {
-  padding: 24px;
+  padding: 10px;
   border-top: 1px solid #e8e8e8;
   background: white;
 }
@@ -545,23 +565,25 @@ onMounted(() => {
   gap: 8px;
 }
 
-/* 右侧预览区域 */
+/* 网页预览区域 */
 .preview-section {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  background: white;
-  min-width: 400px;
+  /* background: rgb(255, 255, 255); */
+  height: 80vh;
+  min-height: 400px;
+  border: 3px solid rgb(240, 240, 240);
+  /* border-radius: 16px; */
 }
 
 .preview-header {
   padding: 16px 24px;
-  border-bottom: 1px solid #e8e8e8;
+  border-bottom: 2px solid #e8e8e8;
   background: white;
 }
 
 .preview-header h3 {
-  margin: 0 0 8px 0;
+  margin: 0 0 10px 0;
   font-size: 16px;
   font-weight: 600;
 }
@@ -571,7 +593,8 @@ onMounted(() => {
 }
 
 .url-link {
-  color: #1890ff;
+  color: #1859ff;
+  font-size: medium;
   text-decoration: none;
 }
 
@@ -642,17 +665,13 @@ onMounted(() => {
 
 /* 响应式设计 */
 @media (max-width: 1024px) {
-  .main-content {
-    flex-direction: column;
-  }
-
-  .chat-section,
-  .preview-section {
-    min-width: auto;
+  .chat-section {
+    height: 55vh;
+    min-height: 400px;
   }
 
   .preview-section {
-    height: 300px;
+    min-height: 300px;
   }
 }
 

@@ -4,6 +4,13 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { addApp, listMyAppVoByPage, listFeaturedAppVoByPage } from '@/api/appController'
+import {
+  CodeTwoTone,
+  PaperClipOutlined,
+  ThunderboltOutlined,
+  RocketOutlined,
+  RobotOutlined,
+} from '@ant-design/icons-vue'
 
 const router = useRouter()
 
@@ -146,10 +153,10 @@ const editApp = (app: API.AppVO) => {
 }
 
 // 快速创建模板
-const quickTemplates = ['波音网页商页面', '企业网站', '电商运营后台', '暗黑话题社区']
+const quickTemplates = ['猫猫成长网站', '简历展示网页', '工作记录小工具']
 
 const useTemplate = (template: string) => {
-  promptInput.value = `使用 NoCode 创建一个高效的小工具，帮我计算${template}...`
+  promptInput.value = `帮我设计一个${template}...`
 }
 
 // 页面加载时获取数据
@@ -166,7 +173,7 @@ onMounted(() => {
       <div class="hero-content">
         <h1 class="hero-title">
           <span class="title-main">一句话</span>
-          <span class="title-icon">🤖</span>
+          <span class="title-icon"><CodeTwoTone /></span>
           <span class="title-main">呈所想</span>
         </h1>
         <p class="hero-subtitle">与 AI 对话轻松创建应用和网站</p>
@@ -178,7 +185,7 @@ onMounted(() => {
       <div class="input-wrapper">
         <a-textarea
           v-model:value="promptInput"
-          placeholder="使用 NoCode 创建一个高效的小工具，帮我计算......"
+          placeholder="创建一个网页小工具，帮我实现......"
           :rows="4"
           class="prompt-input"
           @keydown.ctrl.enter="handleCreateApp"
@@ -198,12 +205,14 @@ onMounted(() => {
           <div class="submit-actions">
             <a-button type="text" size="small">
               <template #icon>
-                <span>📎</span>
+                <PaperClipOutlined />
               </template>
               上传
             </a-button>
             <a-button type="text" size="small">
-              <span>🎤</span>
+              <template #icon>
+                <ThunderboltOutlined />
+              </template>
               优化
             </a-button>
             <a-button
@@ -212,8 +221,9 @@ onMounted(() => {
               @click="handleCreateApp"
               class="create-btn"
             >
+            创建
               <template #icon>
-                <span>🚀</span>
+                <RocketOutlined />
               </template>
             </a-button>
           </div>
@@ -241,7 +251,7 @@ onMounted(() => {
             <div class="app-cover">
               <img v-if="app.cover" :src="app.cover" :alt="app.appName" class="cover-image" />
               <div v-else class="cover-placeholder">
-                <span>🤖</span>
+                <RobotOutlined />
               </div>
             </div>
             <div class="app-info">
@@ -291,7 +301,7 @@ onMounted(() => {
             <div class="app-cover">
               <img v-if="app.cover" :src="app.cover" :alt="app.appName" class="cover-image" />
               <div v-else class="cover-placeholder">
-                <span>🤖</span>
+                <RobotOutlined />
               </div>
               <div class="featured-badge">精选</div>
             </div>
@@ -331,9 +341,9 @@ onMounted(() => {
 .hero-section {
   text-align: center;
   padding: 60px 0 40px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  margin: -24px -24px 40px -24px;
-  border-radius: 0 0 20px 20px;
+  background: linear-gradient(135deg, #c1c7e4 0%, #272626 100%);
+  margin: -24px -24px 50px -24px;
+  border-radius: 10px 10px 60px 60px;
   color: white;
 }
 
@@ -417,9 +427,9 @@ onMounted(() => {
 }
 
 .create-btn {
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
+  /* border-radius: 15% 15% 15% 15%; */
+  width: 60px;
+  height: 25px;
   display: flex;
   align-items: center;
   justify-content: center;

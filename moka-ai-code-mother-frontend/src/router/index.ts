@@ -1,5 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { useLoginUserStore } from '@/stores/loginUser.ts'
 import HomePage from '../pages/HomePage.vue'
 import UserManagePage from '@/pages/admin/UserManagePage.vue'
 import UserRegisterPage from '@/pages/user/UserRegisterPage.vue'
@@ -7,8 +6,7 @@ import UserLoginPage from '@/pages/user/UserLoginPage.vue'
 import AppChatPage from '@/pages/AppChatPage.vue'
 import AppManagePage from '@/pages/admin/AppManagePage.vue'
 import AppEditPage from '@/pages/AppEditPage.vue'
-import type { MenuProps } from 'ant-design-vue'
-import { computed, h } from 'vue'
+
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
