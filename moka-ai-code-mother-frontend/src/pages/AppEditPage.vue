@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { getAppVoById, updateApp, getAppById, updateAppByAdmin } from '@/api/appController'
 import { useLoginUserStore } from '@/stores/loginUser'
+import { PictureOutlined, CopyOutlined } from '@ant-design/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -129,6 +130,21 @@ const handleCoverUpload = (info: any) => {
   }
 }
 
+// 复制部署密钥
+const copyDeployKey = async () => {
+  if (!app.value?.deployKey) {
+    message.error('部署密钥不存在')
+    return
+  }
+
+  try {
+    await navigator.clipboard.writeText(app.value.deployKey)
+    message.success('部署密钥已复制到剪贴板')
+  } catch (error) {
+    message.error('复制失败，请手动复制')
+  }
+}
+
 // 页面加载时获取应用信息
 onMounted(() => {
   loadApp()
@@ -171,7 +187,7 @@ onMounted(() => {
                     <img :src="form.cover" alt="封面预览" class="cover-image" />
                   </div>
                   <div v-else class="cover-placeholder">
-                    <span>🖼️</span>
+                    <PictureOutlined />
                     <p>暂无封面</p>
                   </div>
                 </div>
@@ -237,6 +253,18 @@ onMounted(() => {
               <div v-if="isAdmin" class="info-item">
                 <label>用户ID</label>
                 <span>{{ app?.userId }}</span>
+              </div>
+              <div v-if="app?.deployKey" class="info-item deploy-key-item">
+                <label>部署密钥</label>
+                <div class="deploy-key-content">
+                  <span class="deploy-key-text">{{ app.deployKey }}</span>
+                  <a-button type="text" size="small" @click="copyDeployKey" class="copy-btn">
+                    <template #icon>
+                      <CopyOutlined />
+                    </template>
+                    复制
+                  </a-button>
+                </div>
               </div>
             </div>
           </div>
@@ -415,6 +443,40 @@ onMounted(() => {
 .info-item span {
   font-size: 14px;
   color: #1f2937;
+}
+
+/* 部署密钥样式 */
+.deploy-key-item {
+  grid-column: 1 / -1;
+}
+
+.deploy-key-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8f9fa;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.deploy-key-text {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 12px;
+  color: #495057;
+  flex: 1;
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+.copy-btn {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  height: auto;
+}
+
+.copy-btn:hover {
+  background: rgba(24, 144, 255, 0.1);
 }
 
 .prompt-content {

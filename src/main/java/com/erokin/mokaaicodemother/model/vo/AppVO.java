@@ -58,5 +58,10 @@ public class AppVO implements Serializable {
      */
     private LocalDateTime updateTime;
 
+    /**
+     * 部署密钥
+     */
+    private String deployKey;
+
     private static final long serialVersionUID = 1L;
 }

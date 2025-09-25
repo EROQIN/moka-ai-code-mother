@@ -10,6 +10,8 @@ import {
   ThunderboltOutlined,
   RocketOutlined,
   RobotOutlined,
+  MessageOutlined,
+  EyeOutlined,
 } from '@ant-design/icons-vue'
 
 const router = useRouter()
@@ -82,6 +84,8 @@ const loadMyApps = async (page = 1, searchName = '') => {
 
     if (res.data.code === 0 && res.data.data) {
       myApps.value = res.data.data.records || []
+      // 临时调试：输出应用数据查看 deployKey 字段
+      console.log('我的应用数据:', myApps.value)
       myAppsPagination.value = {
         current: res.data.data.pageNumber || 1,
         pageSize: res.data.data.pageSize || 20,
@@ -142,9 +146,23 @@ const handleFeaturedAppsSearch = () => {
   loadFeaturedApps(1, featuredAppsSearchName.value)
 }
 
-// 查看应用详情
+// 查看应用详情（查看对话）
 const viewApp = (app: API.AppVO) => {
-  router.push(`/app/chat/${app.id}`)
+  router.push(`/app/chat/${app.id}?view=1`)
+}
+
+// 查看对话
+const viewChat = (app: API.AppVO) => {
+  router.push(`/app/chat/${app.id}?view=1`)
+}
+
+// 查看作品
+const viewWork = (app: API.AppVO) => {
+  if (app.deployKey) {
+    window.open(`http://localhost/${app.deployKey}`, '_blank')
+  } else {
+    message.warning('该应用尚未部署')
+  }
 }
 
 // 编辑应用
@@ -221,7 +239,7 @@ onMounted(() => {
               @click="handleCreateApp"
               class="create-btn"
             >
-            创建
+              创建
               <template #icon>
                 <RocketOutlined />
               </template>
@@ -258,6 +276,31 @@ onMounted(() => {
               <h3 class="app-name">{{ app.appName }}</h3>
               <p class="app-time">创建于 {{ app.createTime }}</p>
               <div class="app-actions">
+                <a-button type="text" size="small" @click.stop="viewChat(app)">
+                  <template #icon>
+                    <MessageOutlined />
+                  </template>
+                  查看对话
+                </a-button>
+                <a-button v-if="app.deployKey" type="text" size="small" @click.stop="viewWork(app)">
+                  <template #icon>
+                    <EyeOutlined />
+                  </template>
+                  查看作品
+                </a-button>
+                <!-- 临时调试：显示所有应用的查看作品按钮 -->
+                <a-button
+                  v-if="!app.deployKey"
+                  type="text"
+                  size="small"
+                  @click.stop="viewWork(app)"
+                  style="opacity: 0.5"
+                >
+                  <template #icon>
+                    <EyeOutlined />
+                  </template>
+                  查看作品(无部署)
+                </a-button>
                 <a-button type="text" size="small" @click.stop="editApp(app)"> 编辑 </a-button>
               </div>
             </div>
@@ -311,6 +354,20 @@ onMounted(() => {
               <div class="app-meta">
                 <span class="app-type">{{ app.codeGenType }}</span>
                 <span class="app-author">NoCode 官方</span>
+              </div>
+              <div class="app-actions">
+                <a-button type="text" size="small" @click.stop="viewChat(app)">
+                  <template #icon>
+                    <MessageOutlined />
+                  </template>
+                  查看对话
+                </a-button>
+                <a-button v-if="app.deployKey" type="text" size="small" @click.stop="viewWork(app)">
+                  <template #icon>
+                    <EyeOutlined />
+                  </template>
+                  查看作品
+                </a-button>
               </div>
             </div>
           </div>

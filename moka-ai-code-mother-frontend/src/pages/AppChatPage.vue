@@ -1,19 +1,28 @@
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, nextTick, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
-import { getAppVoById, deployApp } from '@/api/appController'
+import { getAppVoById, deployApp, deleteApp } from '@/api/appController'
+import { useLoginUserStore } from '@/stores/loginUser'
 import { marked } from 'marked'
+import request from '@/request'
 import {
   UserOutlined,
   RobotOutlined,
   PaperClipOutlined,
   AudioOutlined,
   GlobalOutlined,
+  InfoCircleOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  UploadOutlined,
+  CheckCircleOutlined,
+  CopyOutlined,
 } from '@ant-design/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
+const loginUserStore = useLoginUserStore()
 
 // 获取应用ID
 const appId = ref<string>(route.params.id as string)
@@ -27,10 +36,23 @@ const messages = ref<Array<{ role: 'user' | 'assistant'; content: string; timest
 const currentMessage = ref('')
 const showWebsite = ref(false)
 const websiteUrl = ref('')
+const showAppDetail = ref(false)
+const deleteLoading = ref(false)
+const showDeploySuccess = ref(false)
+const deployedUrl = ref('')
 
 // 聊天容器引用
 const chatContainer = ref<HTMLElement>()
 const messageInput = ref<HTMLTextAreaElement>()
+
+// 检查是否有编辑权限
+const canEdit = computed(() => {
+  if (!app.value || !loginUserStore.loginUser) return false
+  return (
+    app.value.userId === loginUserStore.loginUser.id ||
+    loginUserStore.loginUser.userRole === 'admin'
+  )
+})
 
 // 加载应用信息
 const loadApp = async () => {
@@ -39,8 +61,9 @@ const loadApp = async () => {
     const res = await getAppVoById({ id: appId.value })
     if (res.data.code === 0 && res.data.data) {
       app.value = res.data.data
-      // 自动发送初始提示词
-      if (app.value.initPrompt && messages.value.length === 0) {
+      // 检查是否是查看模式，如果不是查看模式才自动发送初始提示词
+      const isViewMode = route.query.view === '1'
+      if (app.value.initPrompt && messages.value.length === 0 && !isViewMode) {
         await sendMessage(app.value.initPrompt, false)
       }
     } else {
@@ -87,11 +110,21 @@ const sendMessage = async (content: string, isUserInput = true) => {
   })
 
   try {
-    // 创建SSE连接
-    const eventSource = new EventSource(
-      `http://localhost:8123/api/app/chat/gen/code?appId=${appId.value}&message=${encodeURIComponent(content)}`,
-      { withCredentials: true },
-    )
+    // 获取 axios 配置的 baseURL
+    const baseURL = request.defaults.baseURL || 'http://localhost:8123/api'
+
+    // 构建URL参数
+    const params = new URLSearchParams({
+      appId: appId.value || '',
+      message: content,
+    })
+
+    const url = `${baseURL}/app/chat/gen/code?${params}`
+
+    // 创建 EventSource 连接
+    const eventSource = new EventSource(url, {
+      withCredentials: true,
+    })
 
     eventSource.onmessage = (event) => {
       const data = event.data
@@ -116,7 +149,8 @@ const sendMessage = async (content: string, isUserInput = true) => {
       chatLoading.value = false
       // 显示网站预览
       showWebsite.value = true
-      websiteUrl.value = `http://localhost:8123/api/static/${app.value?.codeGenType}_${appId.value}/`
+      const baseURL = request.defaults.baseURL || 'http://localhost:8123/api'
+      websiteUrl.value = `${baseURL}/static/${app.value?.codeGenType}_${appId.value}/`
     })
 
     eventSource.onerror = () => {
@@ -158,8 +192,8 @@ const handleDeploy = async () => {
   try {
     const res = await deployApp({ appId: appId.value })
     if (res.data.code === 0) {
-      message.success('部署成功！')
-      message.info(`访问地址：${res.data.data}`)
+      deployedUrl.value = res.data.data
+      showDeploySuccess.value = true
     } else {
       message.error('部署失败：' + res.data.message)
     }
@@ -170,9 +204,79 @@ const handleDeploy = async () => {
   }
 }
 
+// 复制部署地址
+const copyDeployedUrl = async () => {
+  try {
+    await navigator.clipboard.writeText(deployedUrl.value)
+    message.success('地址已复制到剪贴板')
+  } catch (error) {
+    message.error('复制失败')
+  }
+}
+
+// 访问网站
+const visitWebsite = () => {
+  window.open(deployedUrl.value, '_blank')
+}
+
+// 关闭部署成功弹窗
+const closeDeploySuccess = () => {
+  showDeploySuccess.value = false
+}
+
 // 返回首页
 const goHome = () => {
   router.push('/')
+}
+
+// 显示应用详情
+const showAppDetailModal = () => {
+  showAppDetail.value = true
+}
+
+// 关闭应用详情
+const closeAppDetail = () => {
+  showAppDetail.value = false
+}
+
+// 编辑应用
+const editApp = () => {
+  router.push(`/app/edit/${appId.value}`)
+}
+
+// 删除应用
+const handleDeleteApp = () => {
+  message.confirm({
+    title: '确认删除',
+    content: '确定要删除这个应用吗？删除后无法恢复。',
+    okText: '确定',
+    cancelText: '取消',
+    onOk: async () => {
+      deleteLoading.value = true
+      try {
+        const res = await deleteApp({ id: appId.value })
+        if (res.data.code === 0) {
+          message.success('删除成功')
+          router.push('/')
+        } else {
+          message.error('删除失败：' + res.data.message)
+        }
+      } catch (error) {
+        message.error('删除失败')
+      } finally {
+        deleteLoading.value = false
+      }
+    },
+  })
+}
+
+// 检查是否有操作权限（本人或管理员）
+const hasOperationPermission = () => {
+  if (!app.value || !loginUserStore.loginUser) return false
+  return (
+    app.value.userId === loginUserStore.loginUser.id ||
+    loginUserStore.loginUser.userRole === 'admin'
+  )
 }
 
 // Markdown 渲染函数
@@ -204,14 +308,25 @@ onMounted(() => {
           <h1 class="app-title">{{ app?.appName || '应用对话' }}</h1>
         </div>
         <div class="top-bar-right">
-          <a-button
-            type="primary"
-            :loading="deployLoading"
-            @click="handleDeploy"
-            :disabled="!showWebsite"
-          >
-            部署按钮
-          </a-button>
+          <a-space>
+            <a-button @click="showAppDetailModal">
+              <template #icon>
+                <InfoCircleOutlined />
+              </template>
+              应用详情
+            </a-button>
+            <a-button
+              type="primary"
+              :loading="deployLoading"
+              @click="handleDeploy"
+              :disabled="!showWebsite"
+            >
+              <template #icon>
+                <UploadOutlined />
+              </template>
+              部署应用
+            </a-button>
+          </a-space>
         </div>
       </div>
 
@@ -261,7 +376,18 @@ onMounted(() => {
           <!-- 输入区域 -->
           <div class="input-section">
             <div class="input-wrapper">
+              <a-tooltip v-if="!canEdit" title="无法在别人的作品下对话哦~" placement="top">
+                <a-textarea
+                  ref="messageInput"
+                  v-model:value="currentMessage"
+                  placeholder="无法在别人的作品下对话哦~"
+                  :rows="3"
+                  :disabled="true"
+                  class="message-input disabled-input"
+                />
+              </a-tooltip>
               <a-textarea
+                v-else
                 ref="messageInput"
                 v-model:value="currentMessage"
                 placeholder="请描述您想要的功能或修改..."
@@ -272,13 +398,13 @@ onMounted(() => {
               />
               <div class="input-actions">
                 <div class="input-tools">
-                  <a-button type="text" size="small">
+                  <a-button type="text" size="small" :disabled="!canEdit">
                     <template #icon>
                       <PaperClipOutlined />
                     </template>
                     上传
                   </a-button>
-                  <a-button type="text" size="small">
+                  <a-button type="text" size="small" :disabled="!canEdit">
                     <template #icon>
                       <AudioOutlined />
                     </template>
@@ -288,7 +414,7 @@ onMounted(() => {
                 <a-button
                   type="primary"
                   :loading="chatLoading"
-                  :disabled="!currentMessage.trim()"
+                  :disabled="!canEdit || !currentMessage.trim()"
                   @click="handleSendMessage"
                   class="send-btn"
                 >
@@ -302,7 +428,7 @@ onMounted(() => {
         <!-- 网页预览区域 -->
         <div class="preview-section">
           <div class="preview-header">
-            <h3>生成后的网页展示</h3>
+            <h3>页面预览：</h3>
             <div v-if="showWebsite" class="preview-url">
               <a :href="websiteUrl" target="_blank" class="url-link">
                 {{ websiteUrl }}
@@ -321,6 +447,118 @@ onMounted(() => {
           </div>
         </div>
       </div>
+
+      <!-- 应用详情弹窗 -->
+      <a-modal
+        v-model:open="showAppDetail"
+        title="应用详情"
+        :footer="null"
+        width="500px"
+        @cancel="closeAppDetail"
+      >
+        <div v-if="app" class="app-detail-content">
+          <!-- 应用基础信息 -->
+          <div class="detail-section">
+            <h4>应用基础信息</h4>
+            <div class="info-item">
+              <span class="label">应用名称：</span>
+              <span class="value">{{ app.appName }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">创建者：</span>
+              <div class="creator-info">
+                <a-avatar size="small" :src="app.userAvatar">
+                  <template #icon>
+                    <UserOutlined />
+                  </template>
+                </a-avatar>
+                <span class="creator-name">{{ app.userName || '未知用户' }}</span>
+              </div>
+            </div>
+            <div class="info-item">
+              <span class="label">创建时间：</span>
+              <span class="value">{{ app.createTime }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">代码类型：</span>
+              <a-tag
+                :color="
+                  app.codeGenType === 'HTML'
+                    ? 'blue'
+                    : app.codeGenType === 'MULTI_FILE'
+                      ? 'green'
+                      : 'orange'
+                "
+              >
+                {{ app.codeGenType }}
+              </a-tag>
+            </div>
+            <div v-if="app.initPrompt" class="info-item">
+              <span class="label">初始提示词：</span>
+              <div class="prompt-text">{{ app.initPrompt }}</div>
+            </div>
+          </div>
+
+          <!-- 操作栏（仅本人或管理员可见） -->
+          <div v-if="hasOperationPermission()" class="detail-section">
+            <h4>操作</h4>
+            <a-space>
+              <a-button type="primary" @click="editApp">
+                <template #icon>
+                  <EditOutlined />
+                </template>
+                修改
+              </a-button>
+              <a-button danger :loading="deleteLoading" @click="handleDeleteApp">
+                <template #icon>
+                  <DeleteOutlined />
+                </template>
+                删除
+              </a-button>
+            </a-space>
+          </div>
+        </div>
+      </a-modal>
+
+      <!-- 部署成功弹窗 -->
+      <a-modal
+        v-model:open="showDeploySuccess"
+        title="部署成功"
+        :footer="null"
+        width="400px"
+        @cancel="closeDeploySuccess"
+      >
+        <div class="deploy-success-content">
+          <!-- 成功图标 -->
+          <div class="success-icon">
+            <CheckCircleOutlined style="font-size: 48px; color: #52c41a" />
+          </div>
+
+          <!-- 成功标题 -->
+          <h3 class="success-title">网站部署成功！</h3>
+
+          <!-- 提示文字 -->
+          <p class="success-description">你的网站已经成功部署，可以通过以下链接访问：</p>
+
+          <!-- 网址展示和复制 -->
+          <div class="url-section">
+            <div class="url-display">
+              <span class="url-text">{{ deployedUrl }}</span>
+              <a-button type="text" size="small" @click="copyDeployedUrl" class="copy-btn">
+                <template #icon>
+                  <CopyOutlined />
+                </template>
+              </a-button>
+            </div>
+          </div>
+
+          <!-- 操作按钮 -->
+          <div class="action-buttons">
+            <a-button type="primary" @click="visitWebsite"> 访问网站 </a-button>
+            <a-button @click="closeDeploySuccess"> 关闭 </a-button>
+          </div>
+        </div>
+      </a-modal>
     </a-spin>
   </div>
 </template>
@@ -551,6 +789,15 @@ onMounted(() => {
   box-shadow: none;
 }
 
+.disabled-input {
+  background-color: #f5f5f5 !important;
+  cursor: not-allowed !important;
+}
+
+.disabled-input:hover {
+  border-color: #d9d9d9 !important;
+}
+
 .input-actions {
   display: flex;
   justify-content: space-between;
@@ -709,5 +956,139 @@ onMounted(() => {
   .input-tools {
     justify-content: center;
   }
+}
+
+/* 应用详情弹窗样式 */
+.app-detail-content {
+  padding: 8px 0;
+}
+
+.detail-section {
+  margin-bottom: 24px;
+}
+
+.detail-section:last-child {
+  margin-bottom: 0;
+}
+
+.detail-section h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  border-bottom: 1px solid #e8e8e8;
+  padding-bottom: 8px;
+}
+
+.info-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.info-item:last-child {
+  margin-bottom: 0;
+}
+
+.info-item .label {
+  min-width: 80px;
+  color: #6b7280;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.info-item .value {
+  color: #1f2937;
+  flex: 1;
+}
+
+.creator-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.creator-name {
+  color: #1f2937;
+  font-weight: 500;
+}
+
+.prompt-text {
+  background: #f8f9fa;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+  color: #495057;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 120px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* 部署成功弹窗样式 */
+.deploy-success-content {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.success-icon {
+  margin-bottom: 16px;
+}
+
+.success-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 12px 0;
+}
+
+.success-description {
+  color: #6b7280;
+  margin: 0 0 20px 0;
+  font-size: 14px;
+}
+
+.url-section {
+  margin-bottom: 24px;
+}
+
+.url-display {
+  display: flex;
+  align-items: center;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 8px 12px;
+  gap: 8px;
+}
+
+.url-text {
+  flex: 1;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  color: #495057;
+  word-break: break-all;
+}
+
+.copy-btn {
+  flex-shrink: 0;
+  color: #1890ff;
+}
+
+.copy-btn:hover {
+  background: #e6f7ff;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.action-buttons .ant-btn {
+  min-width: 80px;
 }
 </style>
