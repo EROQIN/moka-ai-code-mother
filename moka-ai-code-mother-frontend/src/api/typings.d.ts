@@ -1,4 +1,81 @@
 declare namespace API {
+  type App = {
+    id?: string
+    appName?: string
+    cover?: string
+    initPrompt?: string
+    codeGenType?: 'HTML' | 'MULTI_FILE'
+    deployKey?: string
+    deployedTime?: string
+    priority?: number
+    userId?: number
+    editTime?: string
+    createTime?: string
+    updateTime?: string
+    isDelete?: number
+  }
+
+  type AppAddRequest = {
+    appName?: string
+    cover?: string
+    initPrompt?: string
+    codeGenType?: 'HTML' | 'MULTI_FILE'
+  }
+
+  type AppDeployRequest = {
+    appId?: string
+  }
+
+  type AppQueryRequest = {
+    pageNum?: number
+    pageSize?: number
+    sortField?: string
+    sortOrder?: string
+    id?: string
+    appName?: string
+    cover?: string
+    initPrompt?: string
+    codeGenType?: 'HTML' | 'MULTI_FILE'
+    priority?: number
+    userId?: number
+  }
+
+  type AppUpdateByAdminRequest = {
+    id?: string
+    appName?: string
+    cover?: string
+    priority?: number
+  }
+
+  type AppUpdateRequest = {
+    id?: string
+    appName?: string
+  }
+
+  type AppVO = {
+    id?: string
+    appName?: string
+    cover?: string
+    initPrompt?: string
+    codeGenType?: 'HTML' | 'MULTI_FILE'
+    priority?: number
+    userId?: number
+    createTime?: string
+    updateTime?: string
+  }
+
+  type BaseResponseApp = {
+    code?: number
+    data?: App
+    message?: string
+  }
+
+  type BaseResponseAppVO = {
+    code?: number
+    data?: AppVO
+    message?: string
+  }
+
   type BaseResponseBoolean = {
     code?: number
     data?: boolean
@@ -14,6 +91,12 @@ declare namespace API {
   type BaseResponseLong = {
     code?: number
     data?: number
+    message?: string
+  }
+
+  type BaseResponsePageAppVO = {
+    code?: number
+    data?: PageAppVO
     message?: string
   }
 
@@ -41,8 +124,21 @@ declare namespace API {
     message?: string
   }
 
+  type chatToGenCodeParams = {
+    appId: string
+    message: string
+  }
+
   type DeleteRequest = {
-    id?: number
+    id?: string
+  }
+
+  type getAppByIdParams = {
+    id: string
+  }
+
+  type getAppVOByIdParams = {
+    id: string
   }
 
   type getInfoParams = {
@@ -66,6 +162,15 @@ declare namespace API {
     userRole?: string
     createTime?: string
     updateTime?: string
+  }
+
+  type PageAppVO = {
+    records?: AppVO[]
+    pageNumber?: number
+    pageSize?: number
+    totalPage?: number
+    totalRow?: number
+    optimizeCountQuery?: boolean
   }
 
   type pageParams = {
@@ -92,6 +197,12 @@ declare namespace API {
 
   type removeParams = {
     id: number
+  }
+
+  type ServerSentEventString = true
+
+  type serveStaticResourceParams = {
+    deployKey: string
   }
 
   type User = {
