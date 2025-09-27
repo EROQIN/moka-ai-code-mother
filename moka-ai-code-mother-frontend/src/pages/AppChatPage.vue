@@ -4,7 +4,9 @@ import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { getAppVoById, deployApp, deleteApp } from '@/api/appController'
 import { useLoginUserStore } from '@/stores/loginUser'
-import { marked } from 'marked'
+import MarkdownIt from 'markdown-it'
+import hljs from 'highlight.js'
+import 'highlight.js/styles/github.css'
 import request from '@/request'
 import {
   UserOutlined,
@@ -279,17 +281,41 @@ const hasOperationPermission = () => {
   )
 }
 
+// 初始化 markdown-it 实例
+const md = new MarkdownIt({
+  html: true, // 允许 HTML 标签
+  xhtmlOut: false, // 使用 HTML 而不是 XHTML
+  breaks: false, // 不自动将单个换行转换为 <br>，需要两个换行才会分段
+  linkify: true, // 自动识别链接
+  typographer: true, // 启用一些语言中性的替换 + 引号美化
+  highlight: function (str, lang) {
+    if (lang && hljs.getLanguage(lang)) {
+      try {
+        return (
+          '<pre class="hljs"><code>' +
+          hljs.highlight(str, { language: lang, ignoreIllegals: true }).value +
+          '</code></pre>'
+        )
+      } catch (__) {}
+    }
+
+    return '<pre class="hljs"><code>' + md.utils.escapeHtml(str) + '</code></pre>'
+  },
+})
+
 // Markdown 渲染函数
 const renderMarkdown = (content: string) => {
   if (!content) return ''
 
-  // 配置 marked 选项
-  marked.setOptions({
-    breaks: true, // 支持换行
-    gfm: true, // 支持 GitHub Flavored Markdown
-  })
-
-  return marked(content)
+  try {
+    // 预处理文本：规范化换行
+    //将两个以上的换行符替换成一个换行符
+    const processedContent = content;
+    return md.render(processedContent)
+  } catch (error) {
+    console.error('Markdown 渲染错误:', error)
+    return content
+  }
 }
 
 // 页面加载时获取应用信息
@@ -467,12 +493,12 @@ onMounted(() => {
             <div class="info-item">
               <span class="label">创建者：</span>
               <div class="creator-info">
-                <a-avatar size="small" :src="app.userAvatar">
+                <a-avatar size="small">
                   <template #icon>
                     <UserOutlined />
                   </template>
                 </a-avatar>
-                <span class="creator-name">{{ app.userName || '未知用户' }}</span>
+                <span class="creator-name">用户ID: {{ app.userId || '未知' }}</span>
               </div>
             </div>
             <div class="info-item">
@@ -684,13 +710,18 @@ onMounted(() => {
   margin: 16px 0 8px 0;
   font-weight: 600;
   line-height: 1.3;
+  color: inherit;
 }
 
 .message-text :deep(h1) {
   font-size: 1.5em;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  padding-bottom: 8px;
 }
 .message-text :deep(h2) {
   font-size: 1.3em;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  padding-bottom: 4px;
 }
 .message-text :deep(h3) {
   font-size: 1.1em;
@@ -698,61 +729,178 @@ onMounted(() => {
 
 .message-text :deep(p) {
   margin: 8px 0;
+  line-height: 1.6;
 }
 
+/* 列表样式优化 */
 .message-text :deep(ul),
 .message-text :deep(ol) {
-  margin: 8px 0;
-  padding-left: 20px;
+  margin: 12px 0;
+  padding-left: 24px;
+  line-height: 1.6;
+}
+
+.message-text :deep(ul) {
+  list-style-type: disc;
+}
+
+.message-text :deep(ol) {
+  list-style-type: decimal;
 }
 
 .message-text :deep(li) {
+  margin: 6px 0;
+  padding-left: 4px;
+}
+
+.message-text :deep(li > ul),
+.message-text :deep(li > ol) {
+  margin: 4px 0;
+  padding-left: 20px;
+}
+
+.message-text :deep(li > p) {
   margin: 4px 0;
 }
 
+/* 嵌套列表样式 */
+.message-text :deep(ul ul) {
+  list-style-type: circle;
+}
+
+.message-text :deep(ul ul ul) {
+  list-style-type: square;
+}
+
+/* 代码样式 */
 .message-text :deep(code) {
   background: rgba(0, 0, 0, 0.1);
-  padding: 2px 4px;
+  padding: 2px 6px;
   border-radius: 4px;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+  font-size: 0.9em;
+  color: #e83e8c;
+}
+
+/* Highlight.js 代码块样式 */
+.message-text :deep(pre.hljs) {
+  background: #f8f8f8;
+  padding: 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 12px 0;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  font-size: 0.9em;
+  line-height: 1.5;
+}
+
+.message-text :deep(pre.hljs code) {
+  background: none;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+  border-radius: 0;
+}
+
+/* 用户消息中的代码块样式调整 */
+.message.user .message-text :deep(pre.hljs) {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.message.user .message-text :deep(code) {
+  background: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* 普通 pre 标签样式（兼容性） */
+.message-text :deep(pre:not(.hljs)) {
+  background: rgba(0, 0, 0, 0.05);
+  padding: 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 12px 0;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.message-text :deep(pre:not(.hljs) code) {
+  background: none;
+  padding: 0;
+  color: inherit;
   font-size: 0.9em;
 }
 
-.message-text :deep(pre) {
-  background: rgba(0, 0, 0, 0.05);
-  padding: 12px;
-  border-radius: 8px;
-  overflow-x: auto;
-  margin: 8px 0;
-}
-
-.message-text :deep(pre code) {
-  background: none;
-  padding: 0;
-}
-
+/* 引用样式 */
 .message-text :deep(blockquote) {
   border-left: 4px solid #ddd;
-  margin: 8px 0;
-  padding-left: 16px;
+  margin: 12px 0;
+  padding: 8px 16px;
   color: #666;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 0 4px 4px 0;
 }
 
+.message-text :deep(blockquote p) {
+  margin: 4px 0;
+}
+
+/* 文本格式 */
 .message-text :deep(strong) {
   font-weight: 600;
+  color: inherit;
 }
 
 .message-text :deep(em) {
   font-style: italic;
 }
 
+.message-text :deep(del) {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+/* 链接样式 */
 .message-text :deep(a) {
   color: #1890ff;
   text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s;
 }
 
 .message-text :deep(a:hover) {
-  text-decoration: underline;
+  border-bottom-color: #1890ff;
+}
+
+/* 表格样式 */
+.message-text :deep(table) {
+  border-collapse: collapse;
+  margin: 12px 0;
+  width: 100%;
+  font-size: 0.9em;
+}
+
+.message-text :deep(th),
+.message-text :deep(td) {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.message-text :deep(th) {
+  background: rgba(0, 0, 0, 0.05);
+  font-weight: 600;
+}
+
+/* 分隔线 */
+.message-text :deep(hr) {
+  border: none;
+  border-top: 2px solid rgba(0, 0, 0, 0.1);
+  margin: 20px 0;
+}
+
+/* 换行处理 */
+.message-text :deep(br) {
+  line-height: 1.6;
 }
 
 .message.user .message-text {
