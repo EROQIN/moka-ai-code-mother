@@ -27,8 +27,8 @@ const ADivider = Divider
 
 <style scoped>
 .global-footer {
-  background: #fff;
-  border-top: 1px solid #e8e8e8;
+  background: #ffffff;
+  border-top: 1px solid #e8e8e800;
 }
 
 .footer-content {

@@ -35,6 +35,8 @@ const ALayoutFooter = Layout.Footer
 .basic-layout {
   min-height: 100vh;
   display: flex;
+  /* background-image: linear-gradient(to top, #ffffff 5%, #c9e6f8 10%, #ffffff 100%); */
+  background-image: linear-gradient(to top, #cfd9df 0%, #e2ebf0 100%);
   flex-direction: column;
 }
 
@@ -50,7 +52,7 @@ const ALayoutFooter = Layout.Footer
 .content {
   flex: 1;
   padding: 24px;
-  background: #f5f5f5;
+  background: transparent;
 }
 
 .content-wrapper {
@@ -61,6 +63,15 @@ const ALayoutFooter = Layout.Footer
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   min-height: calc(100vh - 200px);
+}
+
+/* 主页特殊样式 */
+.content-wrapper:has(.home-page) {
+  max-width: none;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
 }
 
 .footer {

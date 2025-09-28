@@ -27,13 +27,13 @@ const createLoading = ref(false)
 // 分页参数
 const myAppsPagination = ref({
   current: 1,
-  pageSize: 20,
+  pageSize: 8,
   total: 0,
 })
 
 const featuredAppsPagination = ref({
   current: 1,
-  pageSize: 20,
+  pageSize: 8,
   total: 0,
 })
 
@@ -88,7 +88,7 @@ const loadMyApps = async (page = 1, searchName = '') => {
       console.log('我的应用数据:', myApps.value)
       myAppsPagination.value = {
         current: res.data.data.pageNumber || 1,
-        pageSize: res.data.data.pageSize || 20,
+        pageSize: res.data.data.pageSize || 8,
         total: res.data.data.totalRow || 0,
       }
     }
@@ -171,10 +171,15 @@ const editApp = (app: API.AppVO) => {
 }
 
 // 快速创建模板
-const quickTemplates = ['猫猫成长网站', '简历展示网页', '工作记录小工具']
+const quickTemplates = [
+  '创建一个个人博客网站，包含文章列表、详情页面、分类标签功能，支持响应式设计，风格简洁现代，配色以蓝白为主，包含导航栏、侧边栏和底部版权信息',
+  '制作一个在线简历展示网站，包含个人信息、工作经历、技能展示、项目作品等模块，采用单页面设计，支持打印功能，整体风格专业大气',
+  '开发一个任务管理工具网页，具备添加、编辑、删除任务功能，支持任务分类、优先级设置、完成状态标记，界面简洁易用，适合日常工作使用',
+  '构建一个产品展示网站，包含产品列表、详情介绍、图片轮播、联系方式等功能，采用卡片式布局，支持移动端适配，整体设计现代时尚',
+]
 
 const useTemplate = (template: string) => {
-  promptInput.value = `帮我设计一个${template}...`
+  promptInput.value = template
 }
 
 // 页面加载时获取数据
@@ -189,12 +194,8 @@ onMounted(() => {
     <!-- 网站标题和描述 -->
     <div class="hero-section">
       <div class="hero-content">
-        <h1 class="hero-title">
-          <span class="title-main">一句话</span>
-          <span class="title-icon"><CodeTwoTone /></span>
-          <span class="title-main">呈所想</span>
-        </h1>
-        <p class="hero-subtitle">与 AI 对话轻松创建应用和网站</p>
+        <h1 class="hero-title">AI 应用生成平台</h1>
+        <p class="hero-subtitle">一句话轻松创建网站应用</p>
       </div>
     </div>
 
@@ -203,7 +204,7 @@ onMounted(() => {
       <div class="input-wrapper">
         <a-textarea
           v-model:value="promptInput"
-          placeholder="创建一个网页小工具，帮我实现......"
+          placeholder="帮我创建个人博客网站"
           :rows="4"
           class="prompt-input"
           @keydown.ctrl.enter="handleCreateApp"
@@ -211,35 +212,32 @@ onMounted(() => {
         <div class="input-actions">
           <div class="quick-templates">
             <a-button
-              v-for="template in quickTemplates"
-              :key="template"
+              v-for="(template, index) in quickTemplates"
+              :key="index"
               size="small"
               type="text"
               @click="useTemplate(template)"
+              class="template-btn"
             >
-              {{ template }}
+              {{
+                index === 0
+                  ? '个人博客'
+                  : index === 1
+                    ? '在线简历'
+                    : index === 2
+                      ? '任务管理'
+                      : '产品展示'
+              }}
             </a-button>
           </div>
           <div class="submit-actions">
-            <a-button type="text" size="small">
-              <template #icon>
-                <PaperClipOutlined />
-              </template>
-              上传
-            </a-button>
-            <a-button type="text" size="small">
-              <template #icon>
-                <ThunderboltOutlined />
-              </template>
-              优化
-            </a-button>
             <a-button
               type="primary"
               :loading="createLoading"
               @click="handleCreateApp"
               class="create-btn"
             >
-              创建
+              创建应用
               <template #icon>
                 <RocketOutlined />
               </template>
@@ -389,19 +387,18 @@ onMounted(() => {
 
 <style scoped>
 .home-page {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 24px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  min-height: 100vh;
 }
 
 /* 英雄区域 */
 .hero-section {
   text-align: center;
-  padding: 60px 0 40px;
-  background: linear-gradient(135deg, #c1c7e4 0%, #272626 100%);
-  margin: -24px -24px 50px -24px;
-  border-radius: 10px 10px 60px 60px;
-  color: white;
+  padding: 80px 24px 60px;
+  color: #333;
 }
 
 .hero-content {
@@ -413,21 +410,8 @@ onMounted(() => {
   font-size: 48px;
   font-weight: 700;
   margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-}
-
-.title-main {
-  color: white;
-}
-
-.title-icon {
-  font-size: 40px;
-  background: rgba(255, 255, 255, 0.2);
-  padding: 8px;
-  border-radius: 12px;
+  color: #333;
+  text-shadow: 0 2px 4px rgba(255, 255, 255, 0.3);
 }
 
 .hero-subtitle {
@@ -439,6 +423,7 @@ onMounted(() => {
 /* 输入区域 */
 .input-section {
   margin-bottom: 48px;
+  padding: 0 24px;
 }
 
 .input-wrapper {
@@ -446,7 +431,7 @@ onMounted(() => {
   margin: 0 auto;
   background: white;
   border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
   overflow: hidden;
 }
 
@@ -468,13 +453,24 @@ onMounted(() => {
   align-items: center;
   padding: 16px 24px;
   background: #fafafa;
-  border-top: 1px solid #f0f0f0;
 }
 
 .quick-templates {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.template-btn {
+  border-radius: 20px;
+  background: #f0f0f0;
+  border: 1px solid #d9d9d9;
+}
+
+.template-btn:hover {
+  background: #e6f7ff;
+  border-color: #1890ff;
+  color: #1890ff;
 }
 
 .submit-actions {
@@ -484,18 +480,19 @@ onMounted(() => {
 }
 
 .create-btn {
-  /* border-radius: 15% 15% 15% 15%; */
-  width: 60px;
-  height: 25px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
+  border-radius: 8px;
+  height: 40px;
+  padding: 0 20px;
+  font-weight: 500;
 }
 
 /* 应用列表区域 */
 .apps-section {
   margin-bottom: 48px;
+  padding: 0 24px;
+  background: white;
+  border-radius: 16px 16px 0 0;
+  padding-top: 32px;
 }
 
 .section-header {
@@ -625,19 +622,16 @@ onMounted(() => {
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .home-page {
-    padding: 0 16px;
-  }
-
   .hero-section {
-    margin: -24px -16px 32px -16px;
-    padding: 40px 16px 32px;
+    padding: 60px 16px 40px;
   }
 
   .hero-title {
     font-size: 32px;
-    flex-direction: column;
-    gap: 8px;
+  }
+
+  .input-section {
+    padding: 0 16px;
   }
 
   .input-actions {
@@ -652,6 +646,10 @@ onMounted(() => {
 
   .submit-actions {
     justify-content: center;
+  }
+
+  .apps-section {
+    padding: 32px 16px 48px;
   }
 
   .apps-grid {
