@@ -6,6 +6,7 @@ import UserLoginPage from '@/pages/user/UserLoginPage.vue'
 import AppChatPage from '@/pages/AppChatPage.vue'
 import AppManagePage from '@/pages/admin/AppManagePage.vue'
 import AppEditPage from '@/pages/AppEditPage.vue'
+import ChatHistoryManagePage from '@/pages/admin/ChatHistoryManagePage.vue'
 
 
 const router = createRouter({
@@ -35,6 +36,11 @@ const router = createRouter({
       path: '/admin/appManage',
       name: '应用管理',
       component: AppManagePage,
+    },
+    {
+      path: '/admin/chatHistoryManage',
+      name: '对话管理',
+      component: ChatHistoryManagePage,
     },
     {
       path: '/app/chat/:id',

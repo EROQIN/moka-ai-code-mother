@@ -3,6 +3,7 @@ import { ref, onMounted, nextTick, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { getAppVoById, deployApp, deleteApp } from '@/api/appController'
+import { listAppChatHistory } from '@/api/chatHistoryController'
 import { useLoginUserStore } from '@/stores/loginUser'
 import MarkdownIt from 'markdown-it'
 import hljs from 'highlight.js'
@@ -20,6 +21,7 @@ import {
   UploadOutlined,
   CheckCircleOutlined,
   CopyOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons-vue'
 
 const route = useRoute()
@@ -34,7 +36,9 @@ const app = ref<API.AppVO>()
 const loading = ref(false)
 const deployLoading = ref(false)
 const chatLoading = ref(false)
-const messages = ref<Array<{ role: 'user' | 'assistant'; content: string; timestamp: number }>>([])
+const messages = ref<
+  Array<{ role: 'user' | 'assistant'; content: string; timestamp: number; id?: number }>
+>([])
 const currentMessage = ref('')
 const showWebsite = ref(false)
 const websiteUrl = ref('')
@@ -43,9 +47,20 @@ const deleteLoading = ref(false)
 const showDeploySuccess = ref(false)
 const deployedUrl = ref('')
 
+// 对话历史相关
+const chatHistoryLoading = ref(false)
+const hasMoreHistory = ref(true)
+const lastCreateTime = ref<string>()
+
 // 聊天容器引用
 const chatContainer = ref<HTMLElement>()
 const messageInput = ref<HTMLTextAreaElement>()
+
+// 预览iframe引用
+const previewIframe = ref<HTMLIFrameElement>()
+
+// 刷新预览相关
+const refreshKey = ref(0) // 用于强制刷新iframe的key
 
 // 检查是否有编辑权限
 const canEdit = computed(() => {
@@ -56,6 +71,68 @@ const canEdit = computed(() => {
   )
 })
 
+// 加载对话历史
+const loadChatHistory = async () => {
+  if (chatHistoryLoading.value || !hasMoreHistory.value) return
+
+  chatHistoryLoading.value = true
+  try {
+    const res = await listAppChatHistory({
+      appId: appId.value,
+      pageSize: 10,
+      lastCreateTime: lastCreateTime.value,
+    })
+
+    if (res.data.code === 0 && res.data.data) {
+      const historyData = res.data.data
+      const historyRecords = historyData.records || []
+
+      // 转换历史记录为消息格式
+      const newMessages = historyRecords.map((record) => {
+        // 根据消息类型判断角色
+        const role = record.messageType === 'user' ? 'user' : 'assistant'
+        return {
+          role,
+          content: record.message || '',
+          timestamp: new Date(record.createTime || '').getTime(),
+          id: record.id,
+        }
+      })
+
+      // 如果是第一页，直接替换消息列表并按时间戳排序
+      if (!lastCreateTime.value) {
+        messages.value = newMessages.sort((a, b) => a.timestamp - b.timestamp)
+      } else {
+        // 如果是加载更多，追加到消息列表末尾并按时间戳排序
+        messages.value = [...messages.value, ...newMessages].sort((a, b) => a.timestamp - b.timestamp)
+      }
+
+      // 更新游标和是否有更多数据
+      if (historyRecords.length > 0) {
+        lastCreateTime.value = historyRecords[historyRecords.length - 1].createTime
+      }
+
+      hasMoreHistory.value = historyData.totalRow > messages.value.length
+
+      // 如果有至少2条对话记录，显示网站预览
+      if (messages.value.length >= 2) {
+        showWebsite.value = true
+        const baseURL = request.defaults.baseURL || 'http://localhost:8123/api'
+        websiteUrl.value = `${baseURL}/static/${app.value?.codeGenType}_${appId.value}/`
+      }
+    }
+  } catch (error) {
+    message.error('加载对话历史失败')
+  } finally {
+    chatHistoryLoading.value = false
+  }
+}
+
+// 加载更多历史消息
+const loadMoreHistory = async () => {
+  await loadChatHistory()
+}
+
 // 加载应用信息
 const loadApp = async () => {
   loading.value = true
@@ -63,9 +140,15 @@ const loadApp = async () => {
     const res = await getAppVoById({ id: appId.value })
     if (res.data.code === 0 && res.data.data) {
       app.value = res.data.data
-      // 检查是否是查看模式，如果不是查看模式才自动发送初始提示词
-      const isViewMode = route.query.view === '1'
-      if (app.value.initPrompt && messages.value.length === 0 && !isViewMode) {
+
+      // 先加载对话历史
+      await loadChatHistory()
+
+      // 修改自动发送初始消息的逻辑：移除view参数，只有自己的app且没有对话历史时才自动发送
+      const isMyApp = app.value.userId === loginUserStore.loginUser?.id
+      const hasHistory = messages.value.length > 0
+
+      if (app.value.initPrompt && !hasHistory && isMyApp) {
         await sendMessage(app.value.initPrompt, false)
       }
     } else {
@@ -84,14 +167,12 @@ const loadApp = async () => {
 const sendMessage = async (content: string, isUserInput = true) => {
   if (!content.trim()) return
 
-  // 添加用户消息
-  if (isUserInput) {
-    messages.value.push({
-      role: 'user',
-      content: content.trim(),
-      timestamp: Date.now(),
-    })
-  }
+  // 添加用户消息（无论是否来自用户输入，都显示用户消息）
+  messages.value.push({
+    role: 'user',
+    content: content.trim(),
+    timestamp: Date.now(),
+  })
 
   // 清空输入框
   currentMessage.value = ''
@@ -149,10 +230,18 @@ const sendMessage = async (content: string, isUserInput = true) => {
     eventSource.addEventListener('done', () => {
       eventSource.close()
       chatLoading.value = false
-      // 显示网站预览
-      showWebsite.value = true
-      const baseURL = request.defaults.baseURL || 'http://localhost:8123/api'
-      websiteUrl.value = `${baseURL}/static/${app.value?.codeGenType}_${appId.value}/`
+
+      // 修改网站展示逻辑：如果有至少1条对话记录才显示网站预览
+      if (messages.value.length >= 1) {
+        showWebsite.value = true
+        const baseURL = request.defaults.baseURL || 'http://localhost:8123/api'
+        websiteUrl.value = `${baseURL}/static/${app.value?.codeGenType}_${appId.value}/`
+        
+        // AI修改页面结束后，自动刷新预览页面
+        setTimeout(() => {
+          refreshPreview()
+        }, 1000) // 延迟1秒刷新，确保页面已生成
+      }
     })
 
     eventSource.onerror = () => {
@@ -281,6 +370,13 @@ const hasOperationPermission = () => {
   )
 }
 
+// 刷新预览页面
+const refreshPreview = () => {
+  // 通过改变key来强制重新加载iframe
+  refreshKey.value += 1
+  message.success('预览页面已刷新')
+}
+
 // 初始化 markdown-it 实例
 const md = new MarkdownIt({
   html: true, // 允许 HTML 标签
@@ -310,7 +406,7 @@ const renderMarkdown = (content: string) => {
   try {
     // 预处理文本：规范化换行
     //将两个以上的换行符替换成一个换行符
-    const processedContent = content;
+    const processedContent = content
     return md.render(processedContent)
   } catch (error) {
     console.error('Markdown 渲染错误:', error)
@@ -362,9 +458,24 @@ onMounted(() => {
         <div class="chat-section">
           <!-- 消息区域 -->
           <div ref="chatContainer" class="messages-container">
+            <!-- 加载更多历史消息按钮 -->
+            <div v-if="hasMoreHistory" class="load-more-container">
+              <a-button
+                type="link"
+                :loading="chatHistoryLoading"
+                @click="loadMoreHistory"
+                class="load-more-btn"
+              >
+                <template #icon>
+                  <ReloadOutlined />
+                </template>
+                加载更多历史消息
+              </a-button>
+            </div>
+
             <div
               v-for="(message, index) in messages"
-              :key="index"
+              :key="message.id || index"
               :class="['message', message.role]"
             >
               <div class="message-avatar">
@@ -455,10 +566,18 @@ onMounted(() => {
         <div class="preview-section">
           <div class="preview-header">
             <h3>页面预览：</h3>
-            <div v-if="showWebsite" class="preview-url">
-              <a :href="websiteUrl" target="_blank" class="url-link">
-                {{ websiteUrl }}
-              </a>
+            <div v-if="showWebsite" class="preview-header-actions">
+              <div class="preview-url">
+                <a :href="websiteUrl" target="_blank" class="url-link">
+                  {{ websiteUrl }}
+                </a>
+              </div>
+              <a-button type="primary" size="small" @click="refreshPreview" class="refresh-btn">
+                <template #icon>
+                  <ReloadOutlined />
+                </template>
+                刷新预览
+              </a-button>
             </div>
           </div>
 
@@ -469,7 +588,14 @@ onMounted(() => {
               </div>
               <p>网站生成完成后将在此处展示</p>
             </div>
-            <iframe v-else :src="websiteUrl" class="preview-iframe" frameborder="0"></iframe>
+            <iframe 
+              v-else 
+              :key="refreshKey"
+              :src="websiteUrl" 
+              class="preview-iframe" 
+              frameborder="0"
+              ref="previewIframe"
+            ></iframe>
           </div>
         </div>
       </div>
@@ -655,6 +781,22 @@ onMounted(() => {
   scroll-behavior: smooth;
 }
 
+/* 加载更多按钮样式 */
+.load-more-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.load-more-btn {
+  color: #1890ff;
+  font-size: 14px;
+}
+
+.load-more-btn:hover {
+  color: #40a9ff;
+}
+
 .message {
   display: flex;
   gap: 12px;
@@ -683,8 +825,9 @@ onMounted(() => {
 }
 
 .message-content {
-  flex: 1;
+  flex: 0 1 auto;
   max-width: 70%;
+  min-width: min-content;
 }
 
 .message.user .message-content {
@@ -983,8 +1126,20 @@ onMounted(() => {
   font-weight: 600;
 }
 
+.preview-header-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
 .preview-url {
   font-size: 12px;
+  flex: 1;
+}
+
+.refresh-btn {
+  flex-shrink: 0;
 }
 
 .url-link {

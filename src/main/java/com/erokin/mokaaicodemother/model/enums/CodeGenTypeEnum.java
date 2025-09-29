@@ -9,8 +9,8 @@ import java.util.Map;
 @Getter
 public enum CodeGenTypeEnum {
 
-    HTML("原生 HTML 模式", "html"),
-    MULTI_FILE("原生多文件模式", "multi_file");
+    HTML("原生 HTML 模式", "HTML"),
+    MULTI_FILE("原生多文件模式", "MULTI_FILE");
 
     private final String description;
 
