@@ -44,6 +44,9 @@ public class AppController {
     @Resource
     private UserService userService;
 
+    @Resource
+    private com.erokin.mokaaicodemother.service.ChatHistoryService chatHistoryService;
+
     // region 用户功能
 
     /**
@@ -104,6 +107,8 @@ public class AppController {
         if (!oldApp.getUserId().equals(loginUser.getId())) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
+        // 关联删除该应用的所有对话历史，避免数据冗余
+        chatHistoryService.deleteByAppId(id);
         boolean b = appService.removeById(id);
         return ResultUtils.success(b);
     }
@@ -167,7 +172,10 @@ public class AppController {
         if (deleteRequest == null || deleteRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        boolean b = appService.removeById(deleteRequest.getId());
+        Long id = deleteRequest.getId();
+        // 关联删除对话历史
+        chatHistoryService.deleteByAppId(id);
+        boolean b = appService.removeById(id);
         return ResultUtils.success(b);
     }
 
