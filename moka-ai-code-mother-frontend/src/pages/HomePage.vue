@@ -265,10 +265,7 @@ onMounted(() => {
         <div class="apps-grid">
           <div v-for="app in myApps" :key="app.id" class="app-card" @click="viewApp(app)">
             <div class="app-cover">
-              <img v-if="app.cover" :src="app.cover" :alt="app.appName" class="cover-image" />
-              <div v-else class="cover-placeholder">
-                <RobotOutlined />
-              </div>
+              <img :src="app.cover || `https://picsum.photos/seed/${app.id}/800/600.jpg`" :alt="app.appName" class="cover-image" />
             </div>
             <div class="app-info">
               <h3 class="app-name">{{ app.appName }}</h3>
@@ -340,10 +337,7 @@ onMounted(() => {
             @click="viewApp(app)"
           >
             <div class="app-cover">
-              <img v-if="app.cover" :src="app.cover" :alt="app.appName" class="cover-image" />
-              <div v-else class="cover-placeholder">
-                <RobotOutlined />
-              </div>
+              <img :src="app.cover || `https://picsum.photos/seed/${app.id}/800/600.jpg`" :alt="app.appName" class="cover-image" />
               <div class="featured-badge">精选</div>
             </div>
             <div class="app-info">
