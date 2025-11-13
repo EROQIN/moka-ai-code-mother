@@ -264,7 +264,7 @@ const handleSendMessage = () => {
 
 // 处理键盘事件
 const handleKeyDown = (event: KeyboardEvent) => {
-  if (event.key === 'Enter' && !event.shiftKey) {
+  if (event.key === 'Enter' && event.ctrlKey) {
     event.preventDefault()
     handleSendMessage()
   }
@@ -527,7 +527,7 @@ onMounted(() => {
                 v-else
                 ref="messageInput"
                 v-model:value="currentMessage"
-                placeholder="请描述您想要的功能或修改..."
+                placeholder="请描述您想要的功能或修改... (Ctrl+Enter 发送)"
                 :rows="3"
                 :disabled="chatLoading"
                 @keydown="handleKeyDown"
@@ -557,6 +557,9 @@ onMounted(() => {
                 >
                   发送
                 </a-button>
+              </div>
+              <div v-if="canEdit" class="input-hint">
+                <span class="hint-text">提示：按 Ctrl+Enter 快速发送消息</span>
               </div>
             </div>
           </div>
@@ -1101,6 +1104,19 @@ onMounted(() => {
 .input-tools {
   display: flex;
   gap: 8px;
+}
+
+.input-hint {
+  padding: 8px 16px;
+  background: #f0f7ff;
+  border-top: 1px solid #d6e4ff;
+}
+
+.hint-text {
+  font-size: 12px;
+  color: #1890ff;
+  display: flex;
+  align-items: center;
 }
 
 /* 网页预览区域 */

@@ -1,5 +1,6 @@
 package com.erokin.mokaaicodemother.service.impl;
 
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.StrUtil;
 import com.erokin.mokaaicodemother.constant.UserConstant;
 import com.erokin.mokaaicodemother.exception.ErrorCode;
@@ -8,6 +9,7 @@ import com.erokin.mokaaicodemother.model.dto.chatHistory.ChatHistoryQueryRequest
 import com.erokin.mokaaicodemother.model.entity.App;
 import com.erokin.mokaaicodemother.model.entity.User;
 import com.erokin.mokaaicodemother.model.enums.ChatHistoryMessageTypeEnum;
+import com.erokin.mokaaicodemother.model.vo.ChatHistoryVO;
 import com.erokin.mokaaicodemother.service.AppService;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
@@ -15,17 +17,23 @@ import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.erokin.mokaaicodemother.model.entity.ChatHistory;
 import com.erokin.mokaaicodemother.mapper.ChatHistoryMapper;
 import com.erokin.mokaaicodemother.service.ChatHistoryService;
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 对话历史 服务层实现。
  *
  * @author <a href="https://github.com/EROQIN">Erokin</a>
  */
+@Slf4j
 @Service
 public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatHistory>  implements ChatHistoryService{
 
@@ -55,6 +63,7 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
                 .parentId(parentId)
                 .build();
         this.save(chat);
+
         return false;
     }
 
@@ -78,11 +87,12 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
     }
 
     @Override
-    public com.erokin.mokaaicodemother.model.vo.ChatHistoryVO getChatHistoryVO(ChatHistory chat) {
+    public ChatHistoryVO getChatHistoryVO(ChatHistory chat) {
         if (chat == null) {
             return null;
         }
-        com.erokin.mokaaicodemother.model.vo.ChatHistoryVO vo = new com.erokin.mokaaicodemother.model.vo.ChatHistoryVO();
+
+        ChatHistoryVO vo = new ChatHistoryVO();
         vo.setId(chat.getId());
         vo.setMessage(chat.getMessage());
         vo.setMessageType(chat.getMessageType());
@@ -95,8 +105,8 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
     }
 
     @Override
-    public java.util.List<com.erokin.mokaaicodemother.model.vo.ChatHistoryVO> getChatHistoryVOList(java.util.List<ChatHistory> list) {
-        java.util.List<com.erokin.mokaaicodemother.model.vo.ChatHistoryVO> result = new java.util.ArrayList<>();
+    public java.util.List<ChatHistoryVO> getChatHistoryVOList(java.util.List<ChatHistory> list) {
+        java.util.List<ChatHistoryVO> result = new java.util.ArrayList<>();
         if (list == null || list.isEmpty()) {
             return result;
         }
@@ -175,6 +185,45 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
         return this.page(Page.of(1, pageSize), queryWrapper);
     }
 
+    //加载对话历史
+    @Override
+    public int loadChatHistoryToMemory(Long appId, MessageWindowChatMemory chatMemory, int maxCount){
+        try{
+            QueryWrapper queryWrapper = QueryWrapper.create()
+                    .eq("appId", appId)
+                    .orderBy("createTime", false)
+                    .limit(1,maxCount)
+                    ;
+            List<ChatHistory> chatHistoryList = this.list(queryWrapper);
+            if(CollectionUtil.isEmpty(chatHistoryList)){
+                return 0;
+            }
+            //反转列表，让旧的信息在前
+            chatHistoryList.reversed();
+            // 按时间顺序添加到记忆中
+            int loadedCount = 0;
+            // 先清理历史缓存，防止重复加载
+            chatMemory.clear();
+            for (ChatHistory chatHistory : chatHistoryList) {
+                if(chatHistory.getMessageType()
+                        .equals(ChatHistoryMessageTypeEnum.USER.getValue())){
+                    chatMemory.add(UserMessage.from(chatHistory.getMessage()));
+                    ++loadedCount;
+                }
+                if(chatHistory.getMessageType()
+                        .equals(ChatHistoryMessageTypeEnum.AI.getValue())){
+                    chatMemory.add(AiMessage.from(chatHistory.getMessage()));
+                    ++loadedCount;
+                }
+
+            }
+            log.info("成功对appId：{}加载了{}条对话历史",appId,loadedCount);
+            return loadedCount;
+        } catch (Exception e) {
+            log.error("加载对话历史失败：appId:{} error:{}",appId,e.getMessage());
+            return 0;
+        }
+    }
 
 
 

@@ -15,8 +15,14 @@ class AiCodeGeneratorServiceTest {
     private AiCodeGeneratorService aiCodeGeneratorService;
     @Test
     void generateHtmlCode() {
-        HtmlCodeResult generatedHtmlCode = aiCodeGeneratorService.generateHtmlCode("生成一个登录表单页面");
-        assertNotNull(generatedHtmlCode);
+        HtmlCodeResult generatedHtmlCode1 = aiCodeGeneratorService.generateHtmlCode(1,"做个工具网站，总代码量不超过 20 行");
+        HtmlCodeResult generatedHtmlCode2 = aiCodeGeneratorService.generateHtmlCode(1,"不要生成代码，告诉我你刚刚做了什么");
+        assertNotNull(generatedHtmlCode1);
+        assertNotNull(generatedHtmlCode2);
+        HtmlCodeResult generatedHtmlCode3 = aiCodeGeneratorService.generateHtmlCode(2,"不要生成代码，我是Erokin");
+        HtmlCodeResult generatedHtmlCode4 = aiCodeGeneratorService.generateHtmlCode(2,"我是谁？不要生成代码");
+        assertNotNull(generatedHtmlCode3);
+        assertNotNull(generatedHtmlCode4);
     }
 
     @Test
